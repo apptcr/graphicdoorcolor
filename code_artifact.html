@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการและคัดลอกรหัสสีประตู - Company Door Color Palette Directory</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'Inter', 'sans-serif'],
+                        mono: ['Consolas', 'Monaco', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .color-card-shadow {
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+        }
+        ::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .toast-enter {
+            animation: slideIn 0.25s ease-out forwards;
+        }
+        .toast-exit {
+            animation: fadeOut 0.25s ease-in forwards;
+        }
+    </style>
+</head>
+<body class="text-slate-800 bg-slate-50 min-h-screen flex flex-col antialiased selection:bg-slate-700 selection:text-white">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand / Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                        <i class="fa-solid fa-palette"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg text-slate-900 leading-tight">Door Color Directory</h1>
+                        <p class="text-xs text-slate-500 font-medium">ระบบคลังรหัสสีประตูมาตรฐานบริษัท</p>
+                    </div>
+                </div>
+
+                <!-- Header Actions -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <button onclick="confirmResetData()" title="รีเซ็ตเป็นค่าเริ่มต้น" class="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-lg transition-all duration-150 focus:outline-none">
+                        <i class="fa-solid fa-rotate-left mr-1.5 text-xs"></i>
+                        <span class="hidden sm:inline">รีเซ็ตค่าเริ่มต้น</span>
+                    </button>
+
+                    <button onclick="openAddModal()" class="inline-flex items-center justify-center px-4 py-2 text-xs sm:text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 active:bg-black rounded-lg shadow-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900">
+                        <i class="fa-solid fa-plus mr-1.5 sm:mr-2 text-xs"></i>
+                        <span>เพิ่มรหัสสีใหม่</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+        <!-- Controls Section: Search Bar -->
+        <section class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 color-card-shadow">
+            <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                
+                <!-- Search Box -->
+                <div class="relative flex-1">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                    </div>
+                    <input 
+                        type="text" 
+                        id="searchInput"
+                        oninput="handleSearch()"
+                        placeholder="ค้นหาชื่อสี, รหัส HEX, RGB หรือ CMYK..." 
+                        class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-800 focus:border-transparent transition-all placeholder-slate-400"
+                    >
+                    <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+                        <i class="fa-solid fa-circle-xmark text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Stats summary badge -->
+                <div class="flex items-center justify-between sm:justify-end gap-3 text-xs text-slate-500 font-medium">
+                    <span id="colorCountBadge" class="bg-slate-100 px-3 py-2 rounded-lg border border-slate-200/60 w-full sm:w-auto text-center">
+                        แสดง <strong id="visibleCount" class="text-slate-900">0</strong> จากทั้งหมด <strong id="totalCount" class="text-slate-900">0</strong> รายการ
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl border border-slate-200/80 color-card-shadow overflow-hidden hidden md:block">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-semibold tracking-wider text-slate-500 uppercase select-none">
+                            <th class="py-3.5 px-4 w-16 text-center">ตัวอย่างสี</th>
+                            <th class="py-3.5 px-4 min-w-[200px]">ชื่อสี (Color Name)</th>
+                            <th class="py-3.5 px-4">HEX Code</th>
+                            <th class="py-3.5 px-4">RGB Code</th>
+                            <th class="py-3.5 px-4">CMYK Code</th>
+                            <th class="py-3.5 px-4 w-16 text-center">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="colorTableBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- Dynamic table rows will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Empty State for Table -->
+            <div id="emptyTableState" class="hidden py-16 text-center">
+                <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                    <i class="fa-solid fa-palette text-xl"></i>
+                </div>
+                <h3 class="text-slate-700 font-semibold text-base mb-1">ไม่พบรหัสสีที่คุณค้นหา</h3>
+                <p class="text-slate-400 text-xs">ลองค้นหาด้วยคำอื่น หรือเพิ่มรหัสสีใหม่เข้าสู่ระบบ</p>
+                <button onclick="clearSearch()" class="mt-4 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+                    ล้างคำค้นหา
+                </button>
+            </div>
+        </section>
+
+        <section id="mobileColorList" class="grid grid-cols-1 gap-4 md:hidden">
+            <!-- Dynamic Mobile Cards will be injected here -->
+        </section>
+
+    </main>
+
+    <div id="addModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 transform scale-95 transition-all duration-200" id="addModalCard">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-800">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                    </div>
+                    <h2 class="font-bold text-slate-900 text-lg">เพิ่มรหัสสีประตูใหม่</h2>
+                </div>
+                <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="addColorForm" onsubmit="handleAddColor(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อสี (Color Name) *</label>
+                    <input type="text" id="inputName" required placeholder="เช่น Modern Charcoal Grey" class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 focus:outline-none transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">HEX Code & เลือกสี *</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="color" id="inputColorPicker" value="#2D3748" oninput="syncColorInput(this.value)" class="w-10 h-10 p-0.5 rounded-xl border border-slate-200 cursor-pointer bg-white flex-shrink-0">
+                        <input type="text" id="inputHex" required value="#2D3748" oninput="syncHexInput(this.value)" placeholder="#2D3748" class="flex-1 px-3.5 py-2 font-mono text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 focus:outline-none transition-all">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">RGB Code (คำนวณให้อัตโนมัติ)</label>
+                        <input type="text" id="inputRgb" placeholder="RGB(45, 55, 72)" class="w-full px-3 py-2 font-mono text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 focus:outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">CMYK Code (คำนวณให้อัตโนมัติ)</label>
+                        <input type="text" id="inputCmyk" placeholder="CMYK(38, 24, 0, 72)" class="w-full px-3 py-2 font-mono text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 focus:outline-none transition-all">
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+                        ยกเลิก
+                    </button>
+                    <button type="submit" class="px-5 py-2 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-sm transition-all">
+                        บันทึกข้อมูลสี
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+            &copy; Company Door Color Palette Directory — ระบบคลังรหัสสีประตู บันทึกข้อมูลอัตโนมัติลงในเบราว์เซอร์
+        </div>
+    </footer>
+
+    <script>
+        const STORAGE_KEY = 'company_door_colors_v2';
+
+        // Default Initial Colors if LocalStorage is empty
+        const defaultColors = [
+            {
+                id: 1,
+                name: "Charcoal Slate",
+                hex: "#2D3748",
+                rgb: "RGB(45, 55, 72)",
+                cmyk: "CMYK(38, 24, 0, 72)"
+            },
+            {
+                id: 2,
+                name: "Soft Off-White",
+                hex: "#F8F9FA",
+                rgb: "RGB(248, 249, 250)",
+                cmyk: "CMYK(1, 0, 0, 2)"
+            },
+            {
+                id: 3,
+                name: "Warm Oak Wood",
+                hex: "#8C6D53",
+                rgb: "RGB(140, 109, 83)",
+                cmyk: "CMYK(0, 22, 41, 45)"
+            },
+            {
+                id: 4,
+                name: "Signal Safety Red",
+                hex: "#DC2626",
+                rgb: "RGB(220, 38, 38)",
+                cmyk: "CMYK(0, 83, 83, 14)"
+            },
+            {
+                id: 5,
+                name: "Muted Sage Green",
+                hex: "#4A5D4E",
+                rgb: "RGB(74, 93, 78)",
+                cmyk: "CMYK(20, 0, 16, 64)"
+            },
+            {
+                id: 6,
+                name: "Anodized Aluminum",
+                hex: "#9CA3AF",
+                rgb: "RGB(156, 163, 175)",
+                cmyk: "CMYK(0, 0, 0, 31)"
+            }
+        ];
+
+        // State Management
+        let colorData = [];
+        let searchQuery = "";
+
+        // Load data from LocalStorage or fallback to defaults
+        function loadColorData() {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData) {
+                    colorData = JSON.parse(savedData);
+                } else {
+                    colorData = [...defaultColors];
+                    saveToLocalStorage();
+                }
+            } catch (err) {
+                console.error("Failed to load from LocalStorage", err);
+                colorData = [...defaultColors];
+            }
+        }
+
+        // Save current data state to LocalStorage
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(colorData));
+            } catch (err) {
+                console.error("Failed to save to LocalStorage", err);
+                showToast("ไม่สามารถบันทึกข้อมูลลงหน่วยความจำเบราว์เซอร์ได้", "error");
+            }
+        }
+
+        // Reset Data to Default
+        function confirmResetData() {
+            if (confirm("คุณต้องการรีเซ็ตข้อมูลสีทั้งหมดกลับเป็นค่าเริ่มต้นใช่หรือไม่?")) {
+                colorData = [...defaultColors];
+                saveToLocalStorage();
+                renderColorData();
+                showToast("รีเซ็ตข้อมูลสีเป็นค่าเริ่มต้นเรียบร้อยแล้ว");
+            }
+        }
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            loadColorData();
+            renderColorData();
+        });
+
+        // Search Handlers
+        function handleSearch() {
+            const input = document.getElementById('searchInput');
+            searchQuery = input.value.trim().toLowerCase();
+            
+            const clearBtn = document.getElementById('clearSearchBtn');
+            if (searchQuery.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+
+            renderColorData();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            searchQuery = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            renderColorData();
+        }
+
+        // Filter Colors Helper
+        function getFilteredColors() {
+            if (!searchQuery) return colorData;
+            return colorData.filter(item => {
+                const query = searchQuery.toLowerCase();
+                return (
+                    item.name.toLowerCase().includes(query) ||
+                    item.hex.toLowerCase().includes(query) ||
+                    item.rgb.toLowerCase().includes(query) ||
+                    item.cmyk.toLowerCase().includes(query)
+                );
+            });
+        }
+
+        function renderColorData() {
+            const filteredData = getFilteredColors();
+            const tableBody = document.getElementById('colorTableBody');
+            const mobileList = document.getElementById('mobileColorList');
+            const emptyState = document.getElementById('emptyTableState');
+
+            // Update Counts
+            document.getElementById('visibleCount').innerText = filteredData.length;
+            document.getElementById('totalCount').innerText = colorData.length;
+
+            if (filteredData.length === 0) {
+                tableBody.innerHTML = '';
+                mobileList.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            // Render Desktop Table Rows
+            tableBody.innerHTML = filteredData.map(color => {
+                return `
+                    <tr class="hover:bg-slate-50/80 transition-colors group">
+                        <!-- Swatch -->
+                        <td class="py-3 px-4 text-center">
+                            <div class="w-8 h-8 rounded-lg shadow-inner border border-black/10 mx-auto transition-transform group-hover:scale-105" style="background-color: ${color.hex};"></div>
+                        </td>
+
+                        <!-- Name -->
+                        <td class="py-3 px-4">
+                            <span class="font-semibold text-slate-800">${color.name}</span>
+                        </td>
+
+                        <!-- HEX -->
+                        <td class="py-3 px-4">
+                            ${renderCopyButton(color.hex, 'HEX')}
+                        </td>
+
+                        <!-- RGB -->
+                        <td class="py-3 px-4">
+                            ${renderCopyButton(color.rgb, 'RGB')}
+                        </td>
+
+                        <!-- CMYK -->
+                        <td class="py-3 px-4">
+                            ${renderCopyButton(color.cmyk, 'CMYK')}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="py-3 px-4 text-center">
+                            <button onclick="deleteColor(${color.id})" title="ลบข้อมูลสี" class="text-slate-300 hover:text-red-500 p-1.5 rounded-md hover:bg-red-50 transition-colors">
+                                <i class="fa-regular fa-trash-can text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Render Mobile Cards
+            mobileList.innerHTML = filteredData.map(color => {
+                return `
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 color-card-shadow space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-xl border border-black/10 shadow-inner flex-shrink-0" style="background-color: ${color.hex};"></div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-bold text-slate-800 text-base truncate">${color.name}</h3>
+                            </div>
+                            <button onclick="deleteColor(${color.id})" class="text-slate-300 hover:text-red-500 p-2">
+                                <i class="fa-regular fa-trash-can text-sm"></i>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+                            <div>
+                                <span class="text-[10px] font-semibold text-slate-400 block mb-0.5">HEX</span>
+                                ${renderCopyButton(color.hex, 'HEX')}
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-semibold text-slate-400 block mb-0.5">RGB</span>
+                                ${renderCopyButton(color.rgb, 'RGB')}
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-semibold text-slate-400 block mb-0.5">CMYK</span>
+                                ${renderCopyButton(color.cmyk, 'CMYK')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Copy Button Builder Helper
+        function renderCopyButton(value, label) {
+            if (!value || value.trim() === '' || value === '-') {
+                return `<span class="text-xs text-slate-300 font-mono">-</span>`;
+            }
+
+            const safeValue = value.replace(/'/g, "\\'");
+            return `
+                <button 
+                    onclick="copyToClipboard('${safeValue}')" 
+                    title="คลิกเพื่อคัดลอก ${label}"
+                    class="w-full sm:w-auto inline-flex items-center justify-between space-x-2 px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-900 hover:text-white border border-slate-200/80 text-slate-700 font-mono text-xs transition-all duration-150 group/btn active:scale-95 text-left cursor-pointer"
+                >
+                    <span class="truncate max-w-[140px]">${value}</span>
+                    <i class="fa-regular fa-copy text-[11px] text-slate-400 group-hover/btn:text-white/80 transition-colors"></i>
+                </button>
+            `;
+        }
+
+        function copyToClipboard(text) {
+            if (!text) return;
+
+            // Fallback execCommand method for iframe compatibility
+            const tempInput = document.createElement("input");
+            tempInput.style.position = "absolute";
+            tempInput.style.left = "-9999px";
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
+                document.execCommand("copy");
+                showToast(`คัดลอกรหัสสี "${text}" เรียบร้อยแล้ว!`);
+            } catch (err) {
+                console.error("Failed to copy using execCommand", err);
+                showToast("ไม่สามารถคัดลอกรหัสสีได้", "error");
+            } finally {
+                document.body.removeChild(tempInput);
+            }
+        }
+
+        // Show Toast Notification
+        function showToast(message, type = "success") {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const isSuccess = type === "success";
+            const iconClass = isSuccess ? "fa-circle-check text-emerald-400" : "fa-circle-exclamation text-rose-400";
+            
+            toast.className = `toast-enter flex items-center space-x-3 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl text-xs font-medium border border-slate-700 pointer-events-auto max-w-sm`;
+            toast.innerHTML = `
+                <i class="fa-solid ${iconClass} text-base"></i>
+                <span class="flex-1">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 250);
+            }, 2500);
+        }
+
+        // Delete Color Item & Save
+        function deleteColor(id) {
+            const colorToDelete = colorData.find(c => c.id === id);
+            if (!colorToDelete) return;
+
+            if (confirm(`คุณต้องการลบรหัสสี "${colorToDelete.name}" ใช่หรือไม่?`)) {
+                colorData = colorData.filter(c => c.id !== id);
+                saveToLocalStorage();
+                renderColorData();
+                showToast(`ลบข้อมูลสี "${colorToDelete.name}" แล้ว`);
+            }
+        }
+
+        // Modal Controls
+        function openAddModal() {
+            const modal = document.getElementById('addModal');
+            const card = document.getElementById('addModalCard');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+        }
+
+        function closeAddModal() {
+            const modal = document.getElementById('addModal');
+            const card = document.getElementById('addModalCard');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            document.getElementById('addColorForm').reset();
+            syncColorInput('#2D3748');
+        }
+
+        // Color Picker Sync & Calculations
+        function syncColorInput(hex) {
+            document.getElementById('inputHex').value = hex.toUpperCase();
+            autoCalculateRgbCmyk(hex);
+        }
+
+        function syncHexInput(hex) {
+            if (/^#[0-9A-F]{6}$/i.test(hex)) {
+                document.getElementById('inputColorPicker').value = hex;
+                autoCalculateRgbCmyk(hex);
+            }
+        }
+
+        // Auto Calculate RGB and CMYK from HEX
+        function autoCalculateRgbCmyk(hex) {
+            let c = hex.replace('#', '');
+            if (c.length === 6) {
+                let r = parseInt(c.substring(0, 2), 16);
+                let g = parseInt(c.substring(2, 4), 16);
+                let b = parseInt(c.substring(4, 6), 16);
+
+                document.getElementById('inputRgb').value = `RGB(${r}, ${g}, ${b})`;
+
+                // Calculate CMYK
+                let rNorm = r / 255;
+                let gNorm = g / 255;
+                let bNorm = b / 255;
+
+                let k = 1 - Math.max(rNorm, gNorm, bNorm);
+                let cyan = (1 - rNorm - k) / (1 - k) || 0;
+                let magenta = (1 - gNorm - k) / (1 - k) || 0;
+                let yellow = (1 - bNorm - k) / (1 - k) || 0;
+
+                let cPct = Math.round(cyan * 100);
+                let mPct = Math.round(magenta * 100);
+                let yPct = Math.round(yellow * 100);
+                let kPct = Math.round(k * 100);
+
+                document.getElementById('inputCmyk').value = `CMYK(${cPct}, ${mPct}, ${yPct}, ${kPct})`;
+            }
+        }
+
+        // Handle Form Submit & Save Data to LocalStorage
+        function handleAddColor(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('inputName').value.trim();
+            let hex = document.getElementById('inputHex').value.trim();
+            const rgb = document.getElementById('inputRgb').value.trim() || '-';
+            const cmyk = document.getElementById('inputCmyk').value.trim() || '-';
+
+            if (!hex.startsWith('#')) {
+                hex = '#' + hex;
+            }
+
+            const newColor = {
+                id: Date.now(),
+                name,
+                hex: hex.toUpperCase(),
+                rgb,
+                cmyk
+            };
+
+            colorData.unshift(newColor); // Add to beginning of array
+            saveToLocalStorage();
+            renderColorData();
+            closeAddModal();
+            showToast(`เพิ่มรหัสสีใหม่ "${name}" สำเร็จและบันทึกข้อมูลเรียบร้อย!`);
+        }
+    </script>
+</body>
+</html>
